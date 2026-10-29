@@ -1,0 +1,1112 @@
+import React, { useState, useEffect } from 'react';
+import { 
+  Phone, MessageSquare, Music, Shield, Settings, Menu, X, 
+  ExternalLink, Send, Plus, Trash2, Edit3, CheckCircle, 
+  ChevronRight, Play, Image as ImageIcon, Info, ArrowRight,
+  Instagram, Youtube, Facebook, Calendar, Search
+} from 'lucide-react';
+
+// --- INITIAL DEFAULT DATA (PLACEHOLDERS FOR USER DATA) ---
+const DEFAULT_SETTINGS = {
+  businessName: "StreetTunes",
+  tagline: "Sound of the Streets • Crafted with Precision",
+  aboutText: "StreetTunes is a premier urban music and audio production hub. We deliver bespoke sound engineering, recording services, artist development, and audio solutions tailored for emerging and established creatives.",
+  whatsAppNumber: "447000000000", // International format without '+' or spaces
+  email: "info@streettunes-placeholder.co.uk",
+  location: "United Kingdom",
+  socials: {
+    instagram: "https://instagram.com/streettunes_placeholder",
+    tiktok: "https://tiktok.com/@streettunes_placeholder",
+    youtube: "https://youtube.com/@streettunes_placeholder",
+    facebook: "",
+    snapchat: ""
+  }
+};
+
+const DEFAULT_SERVICES = [
+  {
+    id: "srv-1",
+    title: "Studio Recording & Tracking",
+    category: "Studio",
+    shortDesc: "High-end vocal tracking, microphone chains, and acoustics.",
+    fullDesc: "Book dedicated recording sessions equipped with industry-standard microphones, preamps, and dedicated tracking engineers to capture your sound cleanly.",
+    priceNote: "Inquire for hourly & block rates",
+    imageUrl: "https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?auto=format&fit=crop&w=800&q=80",
+    featured: true,
+    active: true
+  },
+  {
+    id: "srv-2",
+    title: "Mixing & Mastering",
+    category: "Production",
+    shortDesc: "Radio-ready loudness, punchy low-end, and wide dynamics.",
+    fullDesc: "Complete hybrid analog-digital mixing and mastering tuned to stream flawlessly on Spotify, Apple Music, and club systems.",
+    priceNote: "Per-track packages available",
+    imageUrl: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=800&q=80",
+    featured: true,
+    active: true
+  },
+  {
+    id: "srv-3",
+    title: "Custom Beats & Production",
+    category: "Production",
+    shortDesc: "Original urban, drill, hip-hop, and R&B instrumentals.",
+    fullDesc: "Collaborate directly with our in-house producers to build custom exclusive beats, arrangement revisions, and stems suited to your vocal range.",
+    priceNote: "Exclusive and non-exclusive licenses",
+    imageUrl: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=800&q=80",
+    featured: true,
+    active: true
+  }
+];
+
+const DEFAULT_MEDIA = [
+  {
+    id: "med-1",
+    title: "Control Room Session",
+    category: "Photo",
+    url: "https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?auto=format&fit=crop&w=800&q=80",
+    caption: "Late night vocal cuts at StreetTunes HQ."
+  },
+  {
+    id: "med-2",
+    title: "Hardware Rack & Processing",
+    category: "Photo",
+    url: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=800&q=80",
+    caption: "Tube compression and analog equalisation chain."
+  }
+];
+
+const DEFAULT_ANNOUNCEMENTS = [
+  {
+    id: "ann-1",
+    title: "New Analogue Vocal Chain Installed",
+    date: "November 2024",
+    category: "Studio Update",
+    summary: "Upgraded our recording suite with a vintage tube condenser and premium outboard gear.",
+    isPublished: true
+  }
+];
+
+export default function StreetTunesApp() {
+  // --- PERSISTENT STATE ---
+  const [activeTab, setActiveTab] = useState('home');
+  const [selectedService, setSelectedService] = useState(null);
+  const [activeCategory, setActiveCategory] = useState('All');
+  const [activeMediaFilter, setActiveMediaFilter] = useState('All');
+  const [previewMedia, setPreviewMedia] = useState(null);
+
+  // App Data with local storage fallback
+  const [settings, setSettings] = useState(() => {
+    const saved = localStorage.getItem('st_settings');
+    return saved ? JSON.parse(saved) : DEFAULT_SETTINGS;
+  });
+
+  const [services, setServices] = useState(() => {
+    const saved = localStorage.getItem('st_services');
+    return saved ? JSON.parse(saved) : DEFAULT_SERVICES;
+  });
+
+  const [media, setMedia] = useState(() => {
+    const saved = localStorage.getItem('st_media');
+    return saved ? JSON.parse(saved) : DEFAULT_MEDIA;
+  });
+
+  const [announcements, setAnnouncements] = useState(() => {
+    const saved = localStorage.getItem('st_announcements');
+    return saved ? JSON.parse(saved) : DEFAULT_ANNOUNCEMENTS;
+  });
+
+  const [inquiries, setInquiries] = useState(() => {
+    const saved = localStorage.getItem('st_inquiries');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  // Contact form inputs
+  const [contactForm, setContactForm] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    serviceCategory: 'General Inquiry',
+    message: ''
+  });
+  const [formSent, setFormSent] = useState(false);
+
+  // Admin access state
+  const [adminPin, setAdminPin] = useState('');
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
+  const [adminView, setAdminView] = useState('dashboard');
+
+  // Sync to local storage
+  useEffect(() => {
+    localStorage.setItem('st_settings', JSON.stringify(settings));
+  }, [settings]);
+  useEffect(() => {
+    localStorage.setItem('st_services', JSON.stringify(services));
+  }, [services]);
+  useEffect(() => {
+    localStorage.setItem('st_media', JSON.stringify(media));
+  }, [media]);
+  useEffect(() => {
+    localStorage.setItem('st_announcements', JSON.stringify(announcements));
+  }, [announcements]);
+  useEffect(() => {
+    localStorage.setItem('st_inquiries', JSON.stringify(inquiries));
+  }, [inquiries]);
+
+  // WhatsApp Link Helper
+  const getWhatsAppUrl = (customText) => {
+    const cleanNumber = settings.whatsAppNumber.replace(/[^0-9]/g, '');
+    const defaultMsg = `Hi ${settings.businessName}, I'd like to ask about your services.`;
+    const message = encodeURIComponent(customText || defaultMsg);
+    return `https://wa.me/${cleanNumber}?text=${message}`;
+  };
+
+  const handleContactSubmit = (e) => {
+    e.preventDefault();
+    if (!contactForm.name || !contactForm.email || !contactForm.message) return;
+
+    const newInquiry = {
+      id: `inq-${Date.now()}`,
+      ...contactForm,
+      timestamp: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+      status: 'Pending'
+    };
+
+    setInquiries([newInquiry, ...inquiries]);
+    setFormSent(true);
+    setContactForm({ name: '', email: '', phone: '', serviceCategory: 'General Inquiry', message: '' });
+    setTimeout(() => setFormSent(false), 5000);
+  };
+
+  return (
+    <div className="min-h-screen bg-[#0B0F17] text-gray-100 flex flex-col font-sans selection:bg-amber-500 selection:text-black">
+      
+      {/* --- TOP BRAND HEADER --- */}
+      <header className="sticky top-0 z-40 bg-[#0B0F17]/90 backdrop-blur-md border-b border-gray-800 px-4 py-3">
+        <div className="max-w-6xl mx-auto flex items-center justify-between">
+          <div 
+            onClick={() => { setActiveTab('home'); setSelectedService(null); }}
+            className="flex items-center gap-2 cursor-pointer group"
+          >
+            <div className="w-10 h-10 rounded-lg bg-gradient-to-tr from-amber-600 to-amber-400 flex items-center justify-center text-black font-black text-xl tracking-tighter shadow-lg shadow-amber-500/20 group-hover:scale-105 transition-transform">
+              ST
+            </div>
+            <div>
+              <span className="font-bold tracking-tight text-lg text-white block leading-none">
+                {settings.businessName}
+              </span>
+              <span className="text-[10px] text-amber-500 uppercase tracking-widest font-medium">
+                Official Hub
+              </span>
+            </div>
+          </div>
+
+          {/* Desktop Navigation */}
+          <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-gray-300">
+            {['home', 'services', 'media', 'updates', 'about', 'contact'].map((tab) => (
+              <button
+                key={tab}
+                onClick={() => { setActiveTab(tab); setSelectedService(null); }}
+                className={`capitalize transition-colors ${
+                  activeTab === tab ? 'text-amber-400 font-semibold' : 'hover:text-white'
+                }`}
+              >
+                {tab}
+              </button>
+            ))}
+          </nav>
+
+          {/* Header Action & Admin Toggle */}
+          <div className="flex items-center gap-3">
+            <a
+              href={getWhatsAppUrl()}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hidden sm:inline-flex items-center gap-2 bg-[#25D366]/10 text-[#25D366] hover:bg-[#25D366]/20 border border-[#25D366]/30 px-3 py-1.5 rounded-full text-xs font-semibold transition"
+            >
+              <Phone size={14} />
+              <span>WhatsApp Us</span>
+            </a>
+            <button
+              onClick={() => setActiveTab('admin')}
+              className={`p-2 rounded-lg border text-xs transition ${
+                activeTab === 'admin' 
+                  ? 'border-amber-500 text-amber-400 bg-amber-500/10' 
+                  : 'border-gray-800 text-gray-400 hover:text-white hover:border-gray-700'
+              }`}
+              title="Admin Portal"
+            >
+              <Settings size={18} />
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* --- MAIN CONTENT AREA --- */}
+      <main className="flex-1 pb-24 md:pb-12">
+        {/* VIEW: HOME */}
+        {activeTab === 'home' && (
+          <div>
+            {/* Hero Section */}
+            <section className="relative px-4 pt-12 pb-16 md:pt-20 md:pb-24 overflow-hidden border-b border-gray-800/60 bg-gradient-to-b from-[#111723] to-[#0B0F17]">
+              <div className="max-w-4xl mx-auto text-center relative z-10">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-medium mb-6">
+                  <Music size={12} /> Urban Audio & Creative Studio
+                </div>
+                <h1 className="text-4xl md:text-6xl font-black text-white tracking-tight uppercase leading-tight mb-4">
+                  {settings.tagline}
+                </h1>
+                <p className="text-gray-400 text-base md:text-lg max-w-2xl mx-auto mb-8 font-light leading-relaxed">
+                  {settings.aboutText}
+                </p>
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                  <button
+                    onClick={() => setActiveTab('services')}
+                    className="w-full sm:w-auto px-6 py-3.5 bg-amber-500 hover:bg-amber-400 text-black font-bold rounded-xl transition flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20"
+                  >
+                    <span>Explore All Services</span>
+                    <ArrowRight size={18} />
+                  </button>
+                  <a
+                    href={getWhatsAppUrl()}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full sm:w-auto px-6 py-3.5 bg-[#1F2937] hover:bg-[#374151] text-white border border-gray-700 font-semibold rounded-xl transition flex items-center justify-center gap-2"
+                  >
+                    <MessageSquare size={18} className="text-[#25D366]" />
+                    <span>Quick WhatsApp Enquiry</span>
+                  </a>
+                </div>
+              </div>
+            </section>
+
+            {/* Featured Services */}
+            <section className="max-w-6xl mx-auto px-4 py-16">
+              <div className="flex items-center justify-between mb-8">
+                <div>
+                  <h2 className="text-2xl font-bold text-white tracking-tight">Featured Services</h2>
+                  <p className="text-sm text-gray-400">Professional audio and production packages</p>
+                </div>
+                <button
+                  onClick={() => setActiveTab('services')}
+                  className="text-amber-400 hover:text-amber-300 text-sm font-semibold flex items-center gap-1"
+                >
+                  View All <ChevronRight size={16} />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {services.filter(s => s.featured && s.active).map((service) => (
+                  <div
+                    key={service.id}
+                    className="bg-[#151C28] border border-gray-800 rounded-2xl overflow-hidden hover:border-amber-500/40 transition flex flex-col group"
+                  >
+                    <div className="h-48 overflow-hidden relative">
+                      <img 
+                        src={service.imageUrl} 
+                        alt={service.title} 
+                        className="w-full h-full object-cover group-hover:scale-105 transition duration-500" 
+                      />
+                      <span className="absolute top-3 left-3 bg-black/60 backdrop-blur-md text-amber-400 text-xs px-2.5 py-1 rounded-md font-medium border border-white/10">
+                        {service.category}
+                      </span>
+                    </div>
+                    <div className="p-5 flex-1 flex flex-col justify-between">
+                      <div>
+                        <h3 className="text-lg font-bold text-white mb-2">{service.title}</h3>
+                        <p className="text-gray-400 text-sm mb-4 line-clamp-2">{service.shortDesc}</p>
+                      </div>
+                      <div className="pt-4 border-t border-gray-800 flex items-center justify-between">
+                        <span className="text-xs text-amber-400 font-medium">{service.priceNote}</span>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => { setSelectedService(service); setActiveTab('services'); }}
+                            className="text-xs bg-gray-800 hover:bg-gray-700 text-white px-3 py-1.5 rounded-lg transition"
+                          >
+                            Details
+                          </button>
+                          <a
+                            href={getWhatsAppUrl(`Hi ${settings.businessName}, I'm interested in booking/learning more about ${service.title}.`)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs bg-[#25D366] text-black font-bold px-3 py-1.5 rounded-lg hover:bg-[#20ba59] transition flex items-center gap-1"
+                          >
+                            WhatsApp
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {/* Quick Announcement Preview */}
+            {announcements.filter(a => a.isPublished).length > 0 && (
+              <section className="max-w-6xl mx-auto px-4 pb-12">
+                <div className="bg-gradient-to-r from-amber-500/10 via-[#151C28] to-[#151C28] border border-amber-500/30 rounded-2xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div className="flex items-start gap-4">
+                    <div className="w-10 h-10 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0 mt-1">
+                      <Calendar size={20} />
+                    </div>
+                    <div>
+                      <span className="text-xs font-bold text-amber-400 uppercase tracking-wider">Latest Update</span>
+                      <h4 className="text-white font-bold text-lg">{announcements[0].title}</h4>
+                      <p className="text-gray-400 text-sm mt-1">{announcements[0].summary}</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setActiveTab('updates')}
+                    className="shrink-0 px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg text-xs font-semibold"
+                  >
+                    All Announcements
+                  </button>
+                </div>
+              </section>
+            )}
+          </div>
+        )}
+
+        {/* VIEW: SERVICES DIRECTORY */}
+        {activeTab === 'services' && (
+          <section className="max-w-6xl mx-auto px-4 py-8">
+            <div className="mb-8">
+              <h1 className="text-3xl font-extrabold text-white uppercase tracking-tight">Our Services</h1>
+              <p className="text-gray-400 text-sm mt-1">Explore all professional audio, production, and studio solutions offered by {settings.businessName}.</p>
+            </div>
+
+            {/* Category Filter */}
+            <div className="flex flex-wrap gap-2 mb-8">
+              {['All', ...new Set(services.map(s => s.category))].map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setActiveCategory(cat)}
+                  className={`px-4 py-2 rounded-xl text-xs font-semibold transition ${
+                    activeCategory === cat
+                      ? 'bg-amber-500 text-black shadow-md shadow-amber-500/20'
+                      : 'bg-[#151C28] text-gray-300 hover:bg-gray-800 border border-gray-800'
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+
+            {/* Service Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {services
+                .filter(s => s.active && (activeCategory === 'All' || s.category === activeCategory))
+                .map((service) => (
+                  <div
+                    key={service.id}
+                    className="bg-[#151C28] border border-gray-800 rounded-2xl overflow-hidden hover:border-amber-500/30 flex flex-col justify-between"
+                  >
+                    <div>
+                      <div className="h-52 relative overflow-hidden">
+                        <img src={service.imageUrl} alt={service.title} className="w-full h-full object-cover" />
+                        <span className="absolute top-3 left-3 bg-black/70 backdrop-blur-md text-amber-400 text-xs px-2.5 py-1 rounded-md font-medium border border-white/10">
+                          {service.category}
+                        </span>
+                      </div>
+                      <div className="p-5">
+                        <h3 className="text-xl font-bold text-white mb-2">{service.title}</h3>
+                        <p className="text-gray-400 text-sm leading-relaxed mb-4">{service.shortDesc}</p>
+                        <p className="text-xs text-amber-400 font-semibold mb-2">{service.priceNote}</p>
+                      </div>
+                    </div>
+                    <div className="p-5 pt-0 flex gap-2">
+                      <button
+                        onClick={() => setSelectedService(service)}
+                        className="flex-1 py-2.5 bg-gray-800 hover:bg-gray-700 text-white rounded-xl text-xs font-semibold transition"
+                      >
+                        More Info
+                      </button>
+                      <a
+                        href={getWhatsAppUrl(`Hi ${settings.businessName}, I would like to enquire about ${service.title}.`)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-1 py-2.5 bg-[#25D366] hover:bg-[#20ba59] text-black rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5"
+                      >
+                        <MessageSquare size={14} /> WhatsApp
+                      </a>
+                    </div>
+                  </div>
+                ))}
+            </div>
+
+            {/* Service Detail Modal */}
+            {selectedService && (
+              <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+                <div className="bg-[#151C28] border border-gray-700 rounded-2xl max-w-lg w-full overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+                  <div className="h-56 relative">
+                    <img src={selectedService.imageUrl} alt={selectedService.title} className="w-full h-full object-cover" />
+                    <button
+                      onClick={() => setSelectedService(null)}
+                      className="absolute top-3 right-3 bg-black/70 text-white p-2 rounded-full hover:bg-black transition"
+                    >
+                      <X size={18} />
+                    </button>
+                  </div>
+                  <div className="p-6">
+                    <span className="text-xs uppercase tracking-wider text-amber-400 font-bold">
+                      {selectedService.category}
+                    </span>
+                    <h3 className="text-2xl font-bold text-white mt-1 mb-2">{selectedService.title}</h3>
+                    <p className="text-sm text-gray-300 leading-relaxed mb-4">{selectedService.fullDesc}</p>
+                    <div className="bg-gray-900/60 p-3 rounded-xl border border-gray-800 mb-6">
+                      <span className="text-xs text-gray-400 block font-medium">Pricing / Availability Note:</span>
+                      <span className="text-sm font-semibold text-amber-400">{selectedService.priceNote}</span>
+                    </div>
+
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() => {
+                          setSelectedService(null);
+                          setContactForm(prev => ({ ...prev, serviceCategory: selectedService.title }));
+                          setActiveTab('contact');
+                        }}
+                        className="flex-1 py-3 bg-gray-800 hover:bg-gray-700 text-white rounded-xl text-xs font-semibold"
+                      >
+                        Web Form Enquiry
+                      </button>
+                      <a
+                        href={getWhatsAppUrl(`Hi ${settings.businessName}, I would like more information regarding ${selectedService.title}.`)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-1 py-3 bg-[#25D366] hover:bg-[#20ba59] text-black font-bold rounded-xl text-xs flex items-center justify-center gap-2"
+                      >
+                        <MessageSquare size={16} /> WhatsApp Now
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* VIEW: MEDIA GALLERY */}
+        {activeTab === 'media' && (
+          <section className="max-w-6xl mx-auto px-4 py-8">
+            <div className="mb-8">
+              <h1 className="text-3xl font-extrabold text-white uppercase tracking-tight">Studio Gallery</h1>
+              <p className="text-gray-400 text-sm mt-1">Official photos, creative sessions, and equipment showcases.</p>
+            </div>
+
+            {/* Filter buttons */}
+            <div className="flex gap-2 mb-8">
+              {['All', 'Photo', 'Video', 'Release'].map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveMediaFilter(tab)}
+                  className={`px-4 py-2 rounded-xl text-xs font-semibold transition ${
+                    activeMediaFilter === tab
+                      ? 'bg-amber-500 text-black'
+                      : 'bg-[#151C28] text-gray-400 hover:text-white border border-gray-800'
+                  }`}
+                >
+                  {tab}
+                </button>
+              ))}
+            </div>
+
+            {/* Media Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              {media
+                .filter(m => activeMediaFilter === 'All' || m.category === activeMediaFilter)
+                .map((item) => (
+                  <div
+                    key={item.id}
+                    onClick={() => setPreviewMedia(item)}
+                    className="group relative h-64 bg-[#151C28] border border-gray-800 rounded-xl overflow-hidden cursor-pointer"
+                  >
+                    <img 
+                      src={item.url} 
+                      alt={item.title} 
+                      className="w-full h-full object-cover group-hover:scale-105 transition duration-300" 
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent opacity-0 group-hover:opacity-100 transition-opacity p-4 flex flex-col justify-end">
+                      <span className="text-xs text-amber-400 font-bold">{item.category}</span>
+                      <h4 className="text-white font-semibold text-sm">{item.title}</h4>
+                      {item.caption && <p className="text-xs text-gray-300 line-clamp-1 mt-1">{item.caption}</p>}
+                    </div>
+                  </div>
+                ))}
+            </div>
+
+            {/* Fullscreen Lightbox */}
+            {previewMedia && (
+              <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4">
+                <button
+                  onClick={() => setPreviewMedia(null)}
+                  className="absolute top-4 right-4 text-white bg-gray-800/80 p-2 rounded-full hover:bg-gray-700"
+                >
+                  <X size={20} />
+                </button>
+                <div className="max-w-3xl w-full">
+                  <img src={previewMedia.url} alt={previewMedia.title} className="w-full max-h-[80vh] object-contain rounded-lg" />
+                  <div className="mt-4 text-center">
+                    <h3 className="text-white text-lg font-bold">{previewMedia.title}</h3>
+                    {previewMedia.caption && <p className="text-gray-400 text-sm mt-1">{previewMedia.caption}</p>}
+                  </div>
+                </div>
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* VIEW: ANNOUNCEMENTS & NEWS */}
+        {activeTab === 'updates' && (
+          <section className="max-w-4xl mx-auto px-4 py-8">
+            <div className="mb-8">
+              <h1 className="text-3xl font-extrabold text-white uppercase tracking-tight">Updates & News</h1>
+              <p className="text-gray-400 text-sm mt-1">Official releases, studio notices, and campaign news.</p>
+            </div>
+
+            <div className="space-y-6">
+              {announcements.filter(a => a.isPublished).map((item) => (
+                <div key={item.id} className="bg-[#151C28] border border-gray-800 rounded-2xl p-6">
+                  <div className="flex items-center justify-between gap-4 mb-3">
+                    <span className="px-2.5 py-1 rounded bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-semibold">
+                      {item.category}
+                    </span>
+                    <span className="text-xs text-gray-500">{item.date}</span>
+                  </div>
+                  <h3 className="text-xl font-bold text-white mb-2">{item.title}</h3>
+                  <p className="text-gray-300 text-sm leading-relaxed">{item.summary}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* VIEW: ABOUT */}
+        {activeTab === 'about' && (
+          <section className="max-w-4xl mx-auto px-4 py-8">
+            <h1 className="text-3xl font-extrabold text-white uppercase tracking-tight mb-6">About {settings.businessName}</h1>
+            <div className="bg-[#151C28] border border-gray-800 rounded-2xl p-6 md:p-8 space-y-6">
+              <div>
+                <h3 className="text-lg font-bold text-amber-400 uppercase tracking-wide mb-2">Our Mission & Identity</h3>
+                <p className="text-gray-300 leading-relaxed text-sm md:text-base">{settings.aboutText}</p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-gray-800">
+                <div className="p-4 bg-gray-900/60 rounded-xl border border-gray-800">
+                  <h4 className="text-white font-bold text-sm mb-1">Quality & Sonic Clarity</h4>
+                  <p className="text-gray-400 text-xs">Uncompromising signal flow, calibrated monitoring, and professional mastering chains.</p>
+                </div>
+                <div className="p-4 bg-gray-900/60 rounded-xl border border-gray-800">
+                  <h4 className="text-white font-bold text-sm mb-1">Authentic Community Roots</h4>
+                  <p className="text-gray-400 text-xs">Built to empower raw talent and connect creative artists directly with high-standard engineering.</p>
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* VIEW: CONTACT & ENQUIRY */}
+        {activeTab === 'contact' && (
+          <section className="max-w-5xl mx-auto px-4 py-8">
+            <div className="mb-8">
+              <h1 className="text-3xl font-extrabold text-white uppercase tracking-tight">Contact & Support</h1>
+              <p className="text-gray-400 text-sm mt-1">Get in touch directly with our management and engineering team.</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-8">
+              {/* Left Column: Direct channels */}
+              <div className="md:col-span-2 space-y-6">
+                <div className="bg-[#151C28] border border-gray-800 rounded-2xl p-6 space-y-4">
+                  <h3 className="text-lg font-bold text-white mb-2">Direct Channels</h3>
+                  
+                  <a
+                    href={getWhatsAppUrl()}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 p-3 rounded-xl bg-[#25D366]/10 border border-[#25D366]/30 text-white hover:bg-[#25D366]/20 transition"
+                  >
+                    <div className="w-10 h-10 rounded-lg bg-[#25D366] text-black flex items-center justify-center font-bold">
+                      <MessageSquare size={20} />
+                    </div>
+                    <div>
+                      <span className="text-xs text-[#25D366] font-bold block uppercase tracking-wider">Fastest Response</span>
+                      <span className="text-sm font-semibold">Chat on WhatsApp</span>
+                    </div>
+                  </a>
+
+                  <div className="p-3 rounded-xl bg-gray-900/50 border border-gray-800">
+                    <span className="text-xs text-gray-500 uppercase block font-medium">Email Enquiries</span>
+                    <span className="text-sm text-gray-200 font-mono">{settings.email}</span>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-gray-900/50 border border-gray-800">
+                    <span className="text-xs text-gray-500 uppercase block font-medium">Headquarters</span>
+                    <span className="text-sm text-gray-200">{settings.location}</span>
+                  </div>
+                </div>
+
+                {/* Verified Social Media Profiles */}
+                <div className="bg-[#151C28] border border-gray-800 rounded-2xl p-6">
+                  <h4 className="text-sm font-bold text-white mb-4">Official Channels</h4>
+                  <div className="space-y-2">
+                    {settings.socials.instagram && (
+                      <a
+                        href={settings.socials.instagram}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-between text-xs text-gray-300 hover:text-amber-400 p-2 rounded-lg hover:bg-gray-800/50 transition"
+                      >
+                        <span className="flex items-center gap-2"><Instagram size={14} /> Instagram</span>
+                        <ExternalLink size={12} />
+                      </a>
+                    )}
+                    {settings.socials.tiktok && (
+                      <a
+                        href={settings.socials.tiktok}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-between text-xs text-gray-300 hover:text-amber-400 p-2 rounded-lg hover:bg-gray-800/50 transition"
+                      >
+                        <span className="flex items-center gap-2"><Music size={14} /> TikTok</span>
+                        <ExternalLink size={12} />
+                      </a>
+                    )}
+                    {settings.socials.youtube && (
+                      <a
+                        href={settings.socials.youtube}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-between text-xs text-gray-300 hover:text-amber-400 p-2 rounded-lg hover:bg-gray-800/50 transition"
+                      >
+                        <span className="flex items-center gap-2"><Youtube size={14} /> YouTube</span>
+                        <ExternalLink size={12} />
+                      </a>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column: Web Inquiry Form */}
+              <div className="md:col-span-3">
+                <div className="bg-[#151C28] border border-gray-800 rounded-2xl p-6">
+                  <h3 className="text-xl font-bold text-white mb-2">Send an Enquiry</h3>
+                  <p className="text-xs text-gray-400 mb-6">Fill in the fields below and we'll reply to your verified email or phone.</p>
+
+                  {formSent && (
+                    <div className="mb-6 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-sm flex items-center gap-3">
+                      <CheckCircle size={18} />
+                      <span>Thank you. Your inquiry has been sent to our desk!</span>
+                    </div>
+                  )}
+
+                  <form onSubmit={handleContactSubmit} className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-300 mb-1">Your Full Name *</label>
+                      <input
+                        type="text"
+                        required
+                        value={contactForm.name}
+                        onChange={(e) => setContactForm({ ...contactForm, name: e.target.value })}
+                        placeholder="e.g. Marcus Reid"
+                        className="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-300 mb-1">Email Address *</label>
+                        <input
+                          type="email"
+                          required
+                          value={contactForm.email}
+                          onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
+                          placeholder="marcus@example.com"
+                          className="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-300 mb-1">Phone / WhatsApp (Optional)</label>
+                        <input
+                          type="tel"
+                          value={contactForm.phone}
+                          onChange={(e) => setContactForm({ ...contactForm, phone: e.target.value })}
+                          placeholder="+44 7000..."
+                          className="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-gray-300 mb-1">Service Required</label>
+                      <select
+                        value={contactForm.serviceCategory}
+                        onChange={(e) => setContactForm({ ...contactForm, serviceCategory: e.target.value })}
+                        className="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition"
+                      >
+                        <option value="General Inquiry">General Inquiry</option>
+                        {services.map(s => (
+                          <option key={s.id} value={s.title}>{s.title}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-gray-300 mb-1">Project Details / Message *</label>
+                      <textarea
+                        required
+                        rows={4}
+                        value={contactForm.message}
+                        onChange={(e) => setContactForm({ ...contactForm, message: e.target.value })}
+                        placeholder="Tell us about your tracks, deadline, requirements..."
+                        className="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition"
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      className="w-full py-3.5 bg-amber-500 hover:bg-amber-400 text-black font-bold rounded-xl transition flex items-center justify-center gap-2"
+                    >
+                      <Send size={16} /> Send Official Message
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* VIEW: SECURE ADMIN CONTROL PANEL */}
+        {activeTab === 'admin' && (
+          <section className="max-w-5xl mx-auto px-4 py-8">
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h1 className="text-3xl font-extrabold text-white uppercase tracking-tight flex items-center gap-2">
+                  <Shield size={28} className="text-amber-500" /> Admin Studio Hub
+                </h1>
+                <p className="text-xs text-gray-400 mt-1">Manage all StreetTunes services, WhatsApp numbers, media, and leads.</p>
+              </div>
+
+              {isAdminAuthenticated && (
+                <button
+                  onClick={() => setIsAdminAuthenticated(false)}
+                  className="px-3 py-1.5 border border-red-500/30 text-red-400 hover:bg-red-500/10 rounded-lg text-xs font-semibold"
+                >
+                  Log Out
+                </button>
+              )}
+            </div>
+
+            {!isAdminAuthenticated ? (
+              <div className="max-w-md mx-auto bg-[#151C28] border border-gray-800 rounded-2xl p-6 text-center">
+                <Shield size={40} className="text-amber-500 mx-auto mb-3" />
+                <h3 className="text-lg font-bold text-white mb-2">Administrator Passcode Required</h3>
+                <p className="text-xs text-gray-400 mb-6">Enter your security PIN to edit application details. (Default passcode: <span className="font-mono text-amber-400 font-bold">1234</span>)</p>
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (adminPin === '1234') {
+                      setIsAdminAuthenticated(true);
+                      setAdminPin('');
+                    } else {
+                      alert('Incorrect Admin Passcode');
+                    }
+                  }}
+                  className="space-y-4"
+                >
+                  <input
+                    type="password"
+                    maxLength={6}
+                    value={adminPin}
+                    onChange={(e) => setAdminPin(e.target.value)}
+                    placeholder="Enter Passcode"
+                    className="w-full text-center tracking-widest text-lg py-2.5 bg-gray-900 border border-gray-700 rounded-xl text-white focus:outline-none focus:border-amber-500"
+                  />
+                  <button
+                    type="submit"
+                    className="w-full py-3 bg-amber-500 hover:bg-amber-400 text-black font-bold rounded-xl text-sm"
+                  >
+                    Unlock Administration
+                  </button>
+                </form>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {/* Admin Subnav */}
+                <div className="flex flex-wrap gap-2 border-b border-gray-800 pb-4">
+                  {['dashboard', 'services', 'settings', 'leads'].map((view) => (
+                    <button
+                      key={view}
+                      onClick={() => setAdminView(view)}
+                      className={`capitalize px-4 py-2 rounded-xl text-xs font-semibold transition ${
+                        adminView === view
+                          ? 'bg-amber-500 text-black'
+                          : 'bg-[#151C28] text-gray-400 hover:text-white'
+                      }`}
+                    >
+                      {view}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Subview: Dashboard Stats */}
+                {adminView === 'dashboard' && (
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="bg-[#151C28] border border-gray-800 p-5 rounded-xl">
+                      <span className="text-xs text-gray-500 uppercase font-medium">Active Services</span>
+                      <p className="text-3xl font-black text-white mt-1">{services.filter(s => s.active).length}</p>
+                    </div>
+                    <div className="bg-[#151C28] border border-gray-800 p-5 rounded-xl">
+                      <span className="text-xs text-gray-500 uppercase font-medium">Inbox Enquiries</span>
+                      <p className="text-3xl font-black text-white mt-1">{inquiries.length}</p>
+                    </div>
+                    <div className="bg-[#151C28] border border-gray-800 p-5 rounded-xl">
+                      <span className="text-xs text-gray-500 uppercase font-medium">WhatsApp Configuration</span>
+                      <p className="text-sm font-mono text-emerald-400 mt-2 truncate">+{settings.whatsAppNumber}</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Subview: Services Manager */}
+                {adminView === 'services' && (
+                  <div className="space-y-6">
+                    <div className="flex justify-between items-center">
+                      <h3 className="font-bold text-white text-lg">Services Configurator</h3>
+                      <button
+                        onClick={() => {
+                          const newService = {
+                            id: `srv-${Date.now()}`,
+                            title: "New Audio Service",
+                            category: "Production",
+                            shortDesc: "Brief overview of this service.",
+                            fullDesc: "Complete description and client workflow steps.",
+                            priceNote: "Inquire for quote",
+                            imageUrl: "https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?auto=format&fit=crop&w=800&q=80",
+                            featured: false,
+                            active: true
+                          };
+                          setServices([newService, ...services]);
+                        }}
+                        className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-black text-xs font-bold rounded-lg flex items-center gap-1.5"
+                      >
+                        <Plus size={14} /> Add Service
+                      </button>
+                    </div>
+
+                    <div className="space-y-4">
+                      {services.map((item) => (
+                        <div key={item.id} className="bg-[#151C28] border border-gray-800 p-4 rounded-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                          <div className="flex-1">
+                            <span className="text-[10px] text-amber-500 font-bold uppercase tracking-wider">{item.category}</span>
+                            <h4 className="text-white font-bold">{item.title}</h4>
+                            <p className="text-xs text-gray-400">{item.priceNote}</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => {
+                                const newTitle = prompt('Service Title:', item.title) || item.title;
+                                const newPrice = prompt('Price or Availability Note:', item.priceNote) || item.priceNote;
+                                setServices(services.map(s => s.id === item.id ? { ...s, title: newTitle, priceNote: newPrice } : s));
+                              }}
+                              className="p-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg text-xs"
+                              title="Edit"
+                            >
+                              <Edit3 size={14} />
+                            </button>
+                            <button
+                              onClick={() => {
+                                setServices(services.map(s => s.id === item.id ? { ...s, active: !s.active } : s));
+                              }}
+                              className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold ${
+                                item.active ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'
+                              }`}
+                            >
+                              {item.active ? 'Active' : 'Hidden'}
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (confirm(`Remove ${item.title}?`)) {
+                                  setServices(services.filter(s => s.id !== item.id));
+                                }
+                              }}
+                              className="p-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg"
+                              title="Delete"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Subview: Settings & WhatsApp Config */}
+                {adminView === 'settings' && (
+                  <div className="bg-[#151C28] border border-gray-800 rounded-2xl p-6 space-y-4">
+                    <h3 className="font-bold text-white text-lg mb-2">Business & Contact Settings</h3>
+                    
+                    <div>
+                      <label className="block text-xs text-gray-400 mb-1">
+                        Verified WhatsApp International Number (No plus sign, spaces, or brackets)
+                      </label>
+                      <input
+                        type="text"
+                        value={settings.whatsAppNumber}
+                        onChange={(e) => setSettings({ ...settings, whatsAppNumber: e.target.value })}
+                        placeholder="e.g. 447123456789"
+                        className="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-2 text-sm text-emerald-400 font-mono"
+                      />
+                      <span className="text-[11px] text-gray-500 mt-1 block">
+                        Direct links will generate format: https://wa.me/{settings.whatsAppNumber}
+                      </span>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs text-gray-400 mb-1">Official Email Address</label>
+                      <input
+                        type="email"
+                        value={settings.email}
+                        onChange={(e) => setSettings({ ...settings, email: e.target.value })}
+                        className="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-2 text-sm text-white"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs text-gray-400 mb-1">About Copy / Slogan</label>
+                      <textarea
+                        rows={3}
+                        value={settings.aboutText}
+                        onChange={(e) => setSettings({ ...settings, aboutText: e.target.value })}
+                        className="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-2 text-sm text-white"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Subview: Leads Inbox */}
+                {adminView === 'leads' && (
+                  <div className="space-y-4">
+                    <h3 className="font-bold text-white text-lg">Client Submissions</h3>
+                    {inquiries.length === 0 ? (
+                      <p className="text-sm text-gray-500">No client submissions yet.</p>
+                    ) : (
+                      inquiries.map((inq) => (
+                        <div key={inq.id} className="bg-[#151C28] border border-gray-800 p-4 rounded-xl">
+                          <div className="flex justify-between items-start mb-2">
+                            <div>
+                              <h4 className="font-bold text-white">{inq.name}</h4>
+                              <p className="text-xs text-gray-400">{inq.email} • {inq.phone || 'No phone provided'}</p>
+                            </div>
+                            <span className="text-[10px] text-gray-500">{inq.timestamp}</span>
+                          </div>
+                          <div className="p-3 bg-gray-900/60 rounded-lg text-xs text-gray-300 mb-3">
+                            <span className="text-amber-400 font-semibold block mb-1">Service: {inq.serviceCategory}</span>
+                            {inq.message}
+                          </div>
+                          <div className="flex justify-end gap-2">
+                            <button
+                              onClick={() => setInquiries(inquiries.filter(i => i.id !== inq.id))}
+                              className="text-xs text-red-400 hover:text-red-300"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </section>
+        )}
+      </main>
+
+      {/* --- FLOATING WHATSAPP CTA --- */}
+      <aside aria-label="Quick WhatsApp Contact" className="fixed bottom-20 md:bottom-8 right-5 z-40">
+        <a
+          href={getWhatsAppUrl("Hi StreetTunes, I have a quick enquiry about booking a session.")}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-2.5 bg-[#25D366] hover:bg-[#20ba59] text-black font-bold px-4 py-3 rounded-full shadow-2xl transition hover:scale-105 active:scale-95 group"
+          title="Direct WhatsApp Us"
+        >
+          <MessageSquare size={20} className="fill-black" />
+          <span className="text-xs tracking-tight hidden sm:inline">WhatsApp Us</span>
+        </a>
+      </aside>
+
+      {/* --- MOBILE THUMB-FRIENDLY BOTTOM NAVIGATION --- */}
+      <nav aria-label="Mobile Navigation" className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#0B0F17]/95 backdrop-blur-lg border-t border-gray-800 px-3 py-2 flex justify-around">
+        {[
+          { tab: 'home', label: 'Home', icon: Music },
+          { tab: 'services', label: 'Services', icon: Play },
+          { tab: 'media', label: 'Gallery', icon: ImageIcon },
+          { tab: 'contact', label: 'Contact', icon: Phone },
+        ].map(({ tab, label, icon: Icon }) => (
+          <button
+            key={tab}
+            onClick={() => { setActiveTab(tab); setSelectedService(null); }}
+            className={`flex flex-col items-center gap-1 text-[10px] font-medium py-1 px-3 rounded-lg transition ${
+              activeTab === tab ? 'text-amber-400' : 'text-gray-400 hover:text-gray-200'
+            }`}
+          >
+            <Icon size={18} />
+            <span>{label}</span>
+          </button>
+        ))}
+      </nav>
+
+      {/* --- BUSINESS FOOTER --- */}
+      <footer className="bg-[#080B11] border-t border-gray-800/80 px-4 py-12 text-xs text-gray-400">
+        <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+          <div className="space-y-3">
+            <span className="text-base font-bold text-white tracking-tight">{settings.businessName}</span>
+            <p className="text-gray-400 leading-relaxed">{settings.tagline}</p>
+            <p className="text-gray-500 text-[11px]">UK-based production & sound house.</p>
+          </div>
+
+          <div>
+            <h5 className="font-semibold text-white uppercase tracking-wider text-[11px] mb-3">Service Sectors</h5>
+            <ul className="space-y-2">
+              {services.slice(0, 4).map(s => (
+                <li key={s.id}>
+                  <button 
+                    onClick={() => { setSelectedService(s); setActiveTab('services'); }}
+                    className="hover:text-amber-400 transition"
+                  >
+                    {s.title}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div>
+            <h5 className="font-semibold text-white uppercase tracking-wider text-[11px] mb-3">Verified Contact</h5>
+            <ul className="space-y-2">
+              <li>WhatsApp: +{settings.whatsAppNumber}</li>
+              <li>Email: {settings.email}</li>
+              <li>Location: {settings.location}</li>
+            </ul>
+          </div>
+
+          <div>
+            <h5 className="font-semibold text-white uppercase tracking-wider text-[11px] mb-3">Legal & GDPR</h5>
+            <p className="text-[11px] text-gray-500 mb-2">Compliant with UK Data Protection and GDPR standard guidelines for inquiries.</p>
+            <div className="flex gap-3 text-[11px]">
+              <span className="hover:underline cursor-pointer">Privacy Notice</span>
+              <span>•</span>
+              <span className="hover:underline cursor-pointer">Terms of Service</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="max-w-6xl mx-auto pt-6 border-t border-gray-800/60 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
+          <p>© {new Date().getFullYear()} {settings.businessName}. All rights reserved.</p>
+          <p className="text-gray-600 text-[11px]">Designed mobile-first. Connected directly to WhatsApp Business API standards.</p>
+        </div>
+      </footer>
+
+    </div>
+  );
+}
